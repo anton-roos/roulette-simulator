@@ -2,7 +2,10 @@ class RouletteProgram : IRouletteProgram
 {
     private readonly IRouletteService _rouletteService;
     private readonly RouletteContext _rouletteContext;
-    public RouletteProgram(IRouletteService rouletteService, RouletteContext rouletteContext)
+    public RouletteProgram(
+        IRouletteService rouletteService,
+        RouletteContext rouletteContext
+        )
     {
         _rouletteService = rouletteService;
         _rouletteContext = rouletteContext;

@@ -6,17 +6,17 @@ internal sealed class BettingService : IBettingService
         _context = context;
     }
 
-    public void LoseBet(Session session, double amount)
+    public void LoseBet(Session session, double ammount)
     {
-        session.Balance -= amount;
+        session.Balance -= ammount;
         _context.Update(session);
-        _context.SaveChanges();
+        _context.SaveChangesAsync();
     }
-    
-    public void WinBet(Session session, double amount)
+
+    public void WinBet(Session session, double ammount)
     {
-        session.Balance += amount * 2;
+        session.Balance += ammount;
         _context.Update(session);
-        _context.SaveChanges();
+        _context.SaveChangesAsync();
     }
 }

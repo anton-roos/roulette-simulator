@@ -1,14 +1,18 @@
+using Microsoft.Extensions.DependencyInjection;
+
 internal sealed class RouletteService : IRouletteService
 {
     private readonly IRouletteWheelService _rouletteWheelService;
     private readonly IBettingService _bettingService;
     private readonly RouletteContext _context;
+    private readonly IServiceProvider _serviceProvider;
     private int _betAmmount = 1;
-    public RouletteService(IRouletteWheelService rouletteWheelService, RouletteContext rouletteContext, IBettingService bettingService)
+    public RouletteService(IRouletteWheelService rouletteWheelService, RouletteContext rouletteContext, IBettingService bettingService, IServiceProvider serviceProvider)
     {
         _rouletteWheelService = rouletteWheelService;
         _context = rouletteContext;
         _bettingService = bettingService;
+        _serviceProvider = serviceProvider;
     }
 
     public void Start(Session session)
@@ -20,73 +24,62 @@ internal sealed class RouletteService : IRouletteService
                 break;
             }
             var rolledNumber = _rouletteWheelService.Spin();
-            ReportRolledNumber(rolledNumber, session);
+            var isWinningNumber = CheckIfWinningNumber(rolledNumber);
+            if (isWinningNumber)
+            {
+                _bettingService.WinBet(session, _betAmmount);
+                LogSpin(rolledNumber, session, true);
+                _betAmmount = 1;
+            }
+            else
+            {
+                _bettingService.LoseBet(session, _betAmmount);
+                LogSpin(rolledNumber, session, false);
+                _betAmmount *= 2;
+            }
         }
+        var navigationService = _serviceProvider.GetRequiredService<INavigationService>();
+        navigationService.NavigateHome();
     }
 
-    private void ReportRolledNumber(int rolledNumber, Session session)
+    private bool CheckIfWinningNumber(int rolledNumber)
     {
         if (rolledNumber == 0)
         {
-            var spin = new Spin
-            {
-                DrawNumber = rolledNumber,
-                SessionId = session.SessionId,
-                BetAmmount = _betAmmount,
-                SpinDate = DateTime.Now,
-                IsWin = false,
-                Balance = session.Balance - _betAmmount
-            };
-            _context.Spins.Add(spin);
-            _context.SaveChanges();
-
-            _bettingService.LoseBet(session, _betAmmount);
-
-            _betAmmount *= 2;
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine(rolledNumber);
+            return false;
         }
         else if (RouletteNumbers.RedWinningNumbers.Contains(rolledNumber))
         {
-            var spin = new Spin
-            {
-                DrawNumber = rolledNumber,
-                SessionId = session.SessionId,
-                BetAmmount = _betAmmount,
-                SpinDate = DateTime.Now,
-                IsWin = false,
-                Balance = session.Balance - _betAmmount
-            };
-            _context.Spins.Add(spin);
-            _context.SaveChanges();
-
-            _bettingService.LoseBet(session, _betAmmount);
-
-            _betAmmount *= 2;
-
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine(rolledNumber);
+            return false;
         }
         else if (RouletteNumbers.BlackWinningNumbers.Contains(rolledNumber))
         {
-            var winningAmmount =  _betAmmount * 2;
-            var balanceIncrease = session.Balance + winningAmmount;
-            var spin = new Spin
-            {
-                DrawNumber = rolledNumber,
-                SessionId = session.SessionId,
-                BetAmmount = _betAmmount,
-                SpinDate = DateTime.Now,
-                IsWin = true,
-                Balance = balanceIncrease
-            };
-            _context.Spins.Add(spin);
-            _context.SaveChanges();
-
-            _bettingService.WinBet(session, _betAmmount);
-
-            _betAmmount = 1;
-            
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(rolledNumber);
+            return true;
         }
         else
         {
             throw new Exception("Rolled number is not a valid roulette number");
         }
+    }
+
+    private void LogSpin(int rolledNumber, Session session, bool won)
+    {
+        var spin = new Spin
+        {
+            DrawNumber = rolledNumber,
+            SessionId = session.SessionId,
+            BetAmmount = _betAmmount,
+            SpinDate = DateTime.Now,
+            IsWin = won,
+            Balance = session.Balance
+        };
+        _context.Spins.Add(spin);
+        _context.SaveChanges();
     }
 }
