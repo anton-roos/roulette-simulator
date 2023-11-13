@@ -5,11 +5,11 @@ using Microsoft.Extensions.Logging;
 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
 
-builder.Services.AddSingleton<IRouletteProgram, RouletteProgram>();
-builder.Services.AddSingleton<IRouletteService, RouletteService>();
-builder.Services.AddSingleton<IBettingService, BettingService>();
+builder.Services.AddTransient<IRouletteProgram, RouletteProgram>();
+builder.Services.AddTransient<IRouletteService, RouletteService>();
+builder.Services.AddTransient<IBettingService, BettingService>();
 builder.Services.AddTransient<IRouletteWheelService, RouletteWheelService>();
-builder.Services.AddSingleton<INavigationService, NavigationService>();
+builder.Services.AddTransient<INavigationService, NavigationService>();
 
 builder.Services.AddTransient<IExampleTransientService, ExampleTransientService>();
 builder.Services.AddScoped<IExampleScopedService, ExampleScopedService>();
